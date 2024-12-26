@@ -1,0 +1,12 @@
+agri-worker/
+│
+├── backend/
+│   ├── server.js               # Backend Node.js server code
+│   ├── db.js                   # Database connection configuration
+│   └── package.json            # Backend dependencies (express, pg, etc.)
+│
+└── frontend/
+    ├── index.html              # Frontend HTML file
+    ├── main.js                 # Frontend JavaScript to make API calls
+    ├── style.css               # Optional: For styling the page
+    └── package.json            # Frontend dependencies (if using npm)
