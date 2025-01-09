@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workers Assigned to Job Positions</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f4f4f9;
+      padding: 20px;
+      background: url('https://foodprint.org/wp-content/uploads/2020/04/AdobeStock_11334480_1920x960.jpg') no-repeat center center fixed;
+      background-size: cover;
+    }
+
+    h1 {
+      text-align: center;
+      color: #ffffff;
+      font-size: 2.5rem;
+      margin-top: 30px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    table {
+      width: 100%;
+      margin: 20px 0;
+      border-collapse: collapse;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    th, td {
+      padding: 15px;
+      text-align: left;
+      border: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #4CAF50;
+      color: white;
+      font-size: 1.1rem;
+    }
+
+    td {
+      font-size: 1rem;
+      color: #555;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+
+    .btn {
+      padding: 12px 25px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      text-align: center;
+      border-radius: 5px;
+      font-size: 1.1rem;
+      transition: background-color 0.3s;
+    }
+
+    .btn:hover {
+      background-color: #45a049;
+    }
+
+    .btn:active {
+      background-color: #388e3c;
+    }
+
+    .reload-container {
+      text-align: center;
+      margin-top: 30px;
+    }
+
+    .error-message {
+      color: red;
+      text-align: center;
+      margin-top: 20px;
+      font-size: 1.2rem;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Workers Assigned to Job Positions</h1>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Worker Name</th>
+          <th>Job Position</th>
+        </tr>
+      </thead>
+      <tbody id="workersJobPositionsTableBody">
+        <!-- Data will be dynamically inserted here -->
+      </tbody>
+    </table>
+
+    <div class="reload-container">
+      <button class="btn" onclick="reloadData()">Reload Data</button>
+    </div>
+
+    <div id="error-message" class="error-message" style="display: none;">
+      Error fetching data, please try again later.
+    </div>
+
+  </div>
+
+  <script>
+    // Fetch workers assigned to job positions from the backend
+    function fetchWorkersJobPositions() {
+      fetch('http://localhost:3009/workers-job-positions') // Backend API
+        .then(response => response.json())
+        .then(data => {
+          // Hide error message if data is fetched successfully
+          document.getElementById('error-message').style.display = 'none';
+          renderWorkersJobPositions(data);
+        })
+        .catch(error => {
+          // Show error message if data fetch fails
+          console.error('Error fetching data:', error);
+          document.getElementById('error-message').style.display = 'block';
+        });
+    }
+
+    // Function to render the workers and job positions
+    function renderWorkersJobPositions(data) {
+      const tableBody = document.getElementById('workersJobPositionsTableBody'); // Table body element
+
+      // Clear any previous rows
+      tableBody.innerHTML = '';
+
+      // Loop through the data and create table rows dynamically
+      data.forEach(item => {
+        const row = document.createElement('tr');
+
+        const workerCell = document.createElement('td');
+        workerCell.textContent = item.worker_name; // Worker name from the data
+        row.appendChild(workerCell);
+
+        const jobPositionCell = document.createElement('td');
+        jobPositionCell.textContent = item.job_position_title; // Job position from the data
+        row.appendChild(jobPositionCell);
+
+        tableBody.appendChild(row); // Append the row to the table
+      });
+    }
+
+    // Reload data on button click
+    function reloadData() {
+      fetchWorkersJobPositions();
+    }
+
+    // Initial data load when page loads
+    window.onload = fetchWorkersJobPositions;
+  </script>
+
+</body>
+</html>

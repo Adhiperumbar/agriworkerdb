@@ -3,49 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Assign Worker to Training</title>
+    <title>Worker Management</title>
     <style>
-        /* Styles for the form and layout */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 20px;
-            background-color: #f9f9f9;
+            padding: 0;
+            background: url('https://static.vecteezy.com/system/resources/previews/016/727/398/non_2x/taking-care-of-cabbage-young-greenhouse-worker-in-yellow-uniform-have-job-inside-of-hothouse-free-photo.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: white;
         }
 
         h1 {
             text-align: center;
+            margin-top: 20px;
+            color: #fff;
+        }
+
+        .action-section {
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            margin: 20px auto;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 600px;
+        }
+
+        .action-section h2 {
+            margin-top: 0;
+            font-size: 24px;
             color: #333;
         }
 
-        form {
-            background-color: #fff;
-            padding: 20px;
-            max-width: 400px;
-            margin: 0 auto;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
         label {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 6px;
             display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
         }
 
-        select, button {
+        select, input {
             width: 100%;
             padding: 10px;
-            margin: 10px 0;
-            font-size: 1rem;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
             border-radius: 4px;
-            border: 1px solid #ddd;
+            font-size: 16px;
         }
 
         button {
             background-color: #4CAF50;
             color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
             cursor: pointer;
+            transition: background-color 0.3s ease;
         }
 
         button:hover {
@@ -54,62 +69,80 @@
 
         #message {
             text-align: center;
-            font-size: 1.1rem;
             margin-top: 20px;
+            font-size: 18px;
+            color: #e74c3c;
         }
 
-        .success {
-            color: green;
+        #message.success {
+            color: #2ecc71;
         }
 
-        .error {
-            color: red;
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        form button {
+            align-self: flex-start;
         }
     </style>
 </head>
 <body>
 
-<h1>Assign Worker to Training Session</h1>
+<h1>Worker Management</h1>
 
+<!-- Assign Worker to Training Session -->
 <form id="assignTrainingForm">
-    <label for="workerId">Select Worker:</label>
-    <select id="workerId" required>
-        <!-- Worker options will be populated here -->
-    </select><br><br>
+    <div class="action-section">
+        <label for="workerId">Select Worker:</label>
+        <select id="workerId" required>
+            <!-- Worker options will be populated here -->
+        </select>
 
-    <label for="trainingSessionId">Select Training Session:</label>
-    <select id="trainingSessionId" required>
-        <!-- Training session options will be populated here -->
-    </select><br><br>
+        <label for="trainingSessionId">Select Training Session:</label>
+        <select id="trainingSessionId" required>
+            <!-- Training session options will be populated here -->
+        </select>
 
-    <button type="submit">Assign Worker</button>
+        <button type="submit">Assign Worker to Training</button>
+    </div>
 </form>
 
 <div id="message"></div>
 
 <script>
-    // Wait for the DOM to be fully loaded before running scripts
     document.addEventListener('DOMContentLoaded', () => {
-        // Fetch workers and training sessions and populate dropdowns
-        async function fetchOptions() {
+        async function fetchWorkers() {
             try {
-                // Fetch workers from the backend
-                const workersResponse = await fetch('http://localhost:3007/workers');
+                const workersResponse = await fetch('http://localhost:3009/workers');
                 const workers = await workersResponse.json();
 
                 const workerSelect = document.getElementById('workerId');
+
+                // Clear any previous options before populating new ones
+                workerSelect.innerHTML = '';
+
                 workers.forEach(worker => {
                     const option = document.createElement('option');
                     option.value = worker.id;
                     option.textContent = worker.name;
                     workerSelect.appendChild(option);
                 });
+            } catch (error) {
+                console.error('Error fetching workers:', error);
+                document.getElementById('message').textContent = 'Error fetching workers. Please try again later.';
+            }
+        }
 
-                // Fetch training sessions from the backend
-                const trainingSessionsResponse = await fetch('http://localhost:3007/training-sessions');
+        async function fetchTrainingSessions() {
+            try {
+                const trainingSessionsResponse = await fetch('http://localhost:3009/training-sessions');
                 const trainingSessions = await trainingSessionsResponse.json();
 
                 const trainingSessionSelect = document.getElementById('trainingSessionId');
+                trainingSessionSelect.innerHTML = '';
+
                 trainingSessions.forEach(session => {
                     const option = document.createElement('option');
                     option.value = session.id;
@@ -117,49 +150,36 @@
                     trainingSessionSelect.appendChild(option);
                 });
             } catch (error) {
-                console.error('Error fetching options:', error);
+                console.error('Error fetching training sessions:', error);
+                document.getElementById('message').textContent = 'Error fetching training sessions. Please try again later.';
             }
         }
-        // Submit form to assign worker to training session
-document.getElementById('assignTrainingForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
 
-    const workerId = document.getElementById('workerId').value;
-    const trainingSessionId = document.getElementById('trainingSessionId').value;
-    const messageDiv = document.getElementById('message');
+        document.getElementById('assignTrainingForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const workerId = document.getElementById('workerId').value;
+            const trainingSessionId = document.getElementById('trainingSessionId').value;
 
-    try {
-        const response = await fetch(`http://localhost:3007/workers/${workerId}/assign-training`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ training_session_id: trainingSessionId })
+            try {
+                const response = await fetch(`http://localhost:3009/workers/${workerId}/assign-training`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ training_session_id: trainingSessionId })
+                });
+
+                const result = await response.json();
+                document.getElementById('message').textContent = response.ok ? 'Worker assigned successfully.' : result.error || 'Error assigning worker.';
+                document.getElementById('message').className = response.ok ? 'success' : '';
+            } catch (error) {
+                console.error('Error assigning worker:', error);
+                document.getElementById('message').textContent = 'An error occurred while assigning worker. Please try again.';
+            }
         });
 
-        const result = await response.json();
-        if (response.status === 201) {
-            messageDiv.textContent = 'Worker successfully assigned to training session.';
-            messageDiv.style.color = 'green';
-        } else if (response.status === 400 && result.error) {
-            messageDiv.textContent = result.error;
-            messageDiv.style.color = 'red';
-        } else {
-            messageDiv.textContent = 'Failed to assign worker.';
-            messageDiv.style.color = 'red';
-        }
-    } catch (error) {
-        console.error('Error assigning worker:', error);
-        messageDiv.textContent = 'Error assigning worker to training session.';
-        messageDiv.style.color = 'red';
-    }
-});
-
-        // Fetch and populate the worker and training session options when the page loads
-        fetchOptions();
+        fetchWorkers();
+        fetchTrainingSessions();
     });
 </script>
 
 </body>
 </html>
-

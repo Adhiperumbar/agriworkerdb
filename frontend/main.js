@@ -11,7 +11,7 @@ document.getElementById('create-worker-form').addEventListener('submit', functio
         datehired: document.getElementById('datehired').value
     };
 
-    fetch('http://localhost:3007/workers', {
+    fetch('http://localhost:3009/workers', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'

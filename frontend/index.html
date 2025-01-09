@@ -4,9 +4,10 @@
     <meta charset="utf-8">
     <title>Agri Worker Management System</title>
     <link rel="stylesheet" href="style.css">
-    <a href="assignworkertotraining.html">Update Worker</a>
 </head>
 <body>
+    <h1>Welcome to the Worker Management System</h1>
+
     <h1>Create Worker</h1>
     <form id="create-worker-form">
         <label>Name:</label><input type="text" id="name" required><br>
@@ -18,34 +19,31 @@
         <label>Date Hired:</label><input type="date" id="datehired" required><br>
         <button type="submit">Create Worker</button>
     </form>
-
-<script>
-  document.getElementById('workerForm').addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const workerData = {
-      name: document.getElementById('name').value,
-      gender: document.getElementById('gender').value,
-      phoneno: document.getElementById('phoneno').value,
-      address: document.getElementById('address').value,
-      skillset: document.getElementById('skillset').value,
-      dob: document.getElementById('dob').value,
-      datehired: document.getElementById('datehired').value,
-    };
-    try {
-      const response = await fetch('http://localhost:3007/workers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(workerData),
+    <script>
+      document.getElementById('create-worker-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const workerData = {
+          name: document.getElementById('name').value,
+          gender: document.getElementById('gender').value,
+          phoneno: document.getElementById('phoneno').value,
+          address: document.getElementById('address').value,
+          skillset: document.getElementById('skillset').value,
+          dob: document.getElementById('dob').value,
+          datehired: document.getElementById('datehired').value,
+        };
+        try {
+          const response = await fetch('http://localhost:3009/workers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(workerData),
+          });
+          const data = await response.json();
+          console.log('Worker added:', data);
+        } catch (error) {
+          console.error('Error adding worker:', error);
+        }
       });
-      const data = await response.json();
-      console.log('Worker added:', data);
-    } catch (error) {
-      console.error('Error adding worker:', error);
-    }
-  });
-</script>
-
-
+    </script>
     <script src="main.js"></script>
     <script src="script.js"></script>
 </body>

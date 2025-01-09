@@ -17,7 +17,7 @@ form.addEventListener('submit', function (event) {
     };
 
     // Send the form data as a POST request to the backend
-    fetch('http://localhost:3007/workers', {
+    fetch('http://localhost:3009/workers', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

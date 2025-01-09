@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Worker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: url('https://www.foodformzansi.co.za/wp-content/uploads/2021/04/workers.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #050505;
+            padding: 20px;
+            margin: 0;
+        }
+
+        h2 {
+            text-align: center;
+            color: #fff;
+            font-size: 2rem;
+        }
+
+        .form-container {
+            margin-top: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 500px; /* Increased width for better space */
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .form-container input {
+            width: 100%;
+            padding: 12px; /* Increased padding for better input visibility */
+            margin: 10px 0; /* Increased margin for spacing between inputs */
+            font-size: 1rem;
+            border: 1px solid #ccc; /* Border for better input visibility */
+            border-radius: 4px; /* Rounded corners for inputs */
+        }
+
+        .form-container input:focus {
+            outline: none;
+            border-color: #1DB954; /* Focus border color */
+        }
+
+        .form-container button {
+            width: 100%;
+            padding: 12px; /* Increased padding for button */
+            margin-top: 20px; /* Increased margin for spacing */
+            background-color: #1DB954;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            border: none;
+            border-radius: 4px;
+        }
+
+        .form-container button:hover {
+            background-color: #1ed760;
+        }
+
+        /* Small screen adjustments */
+        @media (max-width: 600px) {
+            .form-container {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h2>Update Worker Details</h2>
+    <div class="form-container">
+        <input type="text" id="updateName" placeholder="Name">
+        <input type="text" id="updateGender" placeholder="Gender">
+        <input type="text" id="updatePhoneNo" placeholder="Phone Number" readonly>
+        <input type="text" id="updateAddress" placeholder="Address">
+        <input type="text" id="updateSkillset" placeholder="Skillset">
+        <input type="date" id="updateDob" placeholder="Date of Birth">
+        <input type="date" id="updateDateHired" placeholder="Date Hired">
+        <input type="number" id="updateExperience" placeholder="Experience (Years)" readonly>
+        <button id="updateWorkerBtn">Update Worker</button>
+    </div>
+
+    <script>
+        // Fetch and load worker data based on phone number
+        async function loadWorkerData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const phoneno = urlParams.get('phoneno');
+            console.log("Phone Number:", phoneno);
+
+            if (!phoneno) {
+                alert("No worker found");
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:3009/workers/${phoneno}`);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Error:', errorData);
+                    alert("Failed to fetch worker data: " + errorData.message);
+                    return;
+                }
+                const worker = await response.json();
+                console.log('Worker data:', worker); // Log the worker data
+                document.getElementById('updateName').value = worker.name || '';
+                document.getElementById('updateGender').value = worker.gender || '';
+                document.getElementById('updatePhoneNo').value = worker.phoneno || '';
+                document.getElementById('updateAddress').value = worker.address || '';
+                document.getElementById('updateSkillset').value = worker.skillset || '';
+                document.getElementById('updateDob').value = worker.dob || '';
+                document.getElementById('updateDateHired').value = worker.datehired || '';
+                document.getElementById('updateExperience').value = calculateExperience(worker.datehired) || '';
+            } catch (error) {
+                console.error('Error fetching worker data:', error);
+                alert("Error fetching worker data: " + error.message);
+            }
+        }
+
+        // Calculate experience in years
+        function calculateExperience(dateHired) {
+            if (!dateHired) return 0;
+            const hiredDate = new Date(dateHired);
+            const currentDate = new Date();
+            const years = currentDate.getFullYear() - hiredDate.getFullYear();
+            const monthDiff = currentDate.getMonth() - hiredDate.getMonth();
+            return monthDiff < 0 ? years - 1 : years;
+        }
+
+        // Update worker details function
+        async function updateWorkerDetails() {
+            const phoneno = document.getElementById('updatePhoneNo').value;
+            const name = document.getElementById('updateName').value;
+            const gender = document.getElementById('updateGender').value;
+            const address = document.getElementById('updateAddress').value;
+            const skillset = document.getElementById('updateSkillset').value;
+            const dob = document.getElementById('updateDob').value;
+            const dateHired = document.getElementById('updateDateHired').value;
+
+            // Ensure fields are not empty
+            if (!name || !gender || !address || !skillset || !dob || !dateHired) {
+                alert("Please fill in all fields.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:3009/workers/${phoneno}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name, gender, address, skillset, dob, dateHired }),
+                });
+
+                if (response.ok) {
+                    alert('Worker updated successfully');
+                    window.location.href = 'workerlist.html'; // Redirect back to worker list
+                } else {
+                    const errorData = await response.json();
+                    console.error('Update failed:', errorData);
+                    alert('Failed to update worker: ' + (errorData.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error updating worker:', error);
+                alert('An error occurred: ' + error.message);
+            }
+        }
+
+        // Event listener for update button
+        document.getElementById('updateWorkerBtn').addEventListener('click', updateWorkerDetails);
+
+        // Load worker data when the page is loaded
+        window.onload = loadWorkerData;
+    </script>
+</body>
+</html>

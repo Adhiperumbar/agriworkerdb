@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Worker List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: url('https://www.foodformzansi.co.za/wp-content/uploads/2021/04/workers.jpg') no-repeat center center fixed; 
+            background-size: cover;
+            color: #050505;
+            padding: 20px;
+            margin: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+            font-size: 2em;
+        }
+        .delete-btn {
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .delete-btn:hover {
+            background-color: darkred;
+        }
+        .form-container {
+            margin-top: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .form-container input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            font-size: 1rem;
+        }
+        .form-container button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            background-color: #1DB954;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .form-container button:hover {
+            background-color: #1ed760;
+        }
+    </style>
+</head>
+<body>
+    <h2>Worker List</h2>
+    <table id="workerTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Gender</th>
+                <th>Phone Number</th>
+                <th>Address</th>
+                <th>Skillset</th>
+                <th>Date of Birth</th>
+                <th>Date Hired</th>
+                <th>Experience (Years)</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Rows will be dynamically added here -->
+        </tbody>
+    </table>
+
+    <script>
+        // Fetch and display workers
+        async function fetchWorkers() {
+            try {
+                const response = await fetch('http://localhost:3009/workers'); // Backend endpoint
+                const workers = await response.json();
+
+                const tableBody = document.querySelector('#workerTable tbody');
+                tableBody.innerHTML = ''; // Clear the table to avoid duplicates
+
+                workers.forEach(worker => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${worker.name || '-'}</td>
+                        <td>${worker.gender || '-'}</td>
+                        <td>${worker.phoneno || '-'}</td>
+                        <td>${worker.address || '-'}</td>
+                        <td>${worker.skillset || '-'}</td>
+                        <td>${worker.dob || '-'}</td>
+                        <td>${worker.datehired || '-'}</td>
+                        <td>${calculateExperience(worker.datehired)} years</td>
+                        <td>
+                            <!-- Only delete button is now present -->
+                            <button class="delete-btn" data-phoneno="${worker.phoneno}">Delete</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                // Attach delete event listeners
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', async (event) => {
+                        const phoneno = event.target.getAttribute('data-phoneno');
+                        await deleteWorker(phoneno);
+                    });
+                });
+
+            } catch (error) {
+                console.error('Error fetching workers:', error);
+            }
+        }
+
+        // Calculate experience in years
+        function calculateExperience(dateHired) {
+            if (!dateHired) return 0; // Handle missing dates
+            const hiredDate = new Date(dateHired);
+            const currentDate = new Date();
+            const years = currentDate.getFullYear() - hiredDate.getFullYear();
+            const monthDiff = currentDate.getMonth() - hiredDate.getMonth();
+
+            return monthDiff < 0 ? years - 1 : years; // Adjust if the current month is earlier
+        }
+
+        // Delete worker
+        async function deleteWorker(phoneno) {
+            try {
+                const response = await fetch(`http://localhost:3009/workers/${phoneno}`, {
+                    method: 'DELETE',
+                });
+                if (response.ok) {
+                    alert('Worker deleted successfully');
+                    fetchWorkers(); // Refresh the worker list
+                } else {
+                    alert('Failed to delete worker');
+                }
+            } catch (error) {
+                console.error('Error deleting worker:', error);
+            }
+        }
+
+        // Fetch workers on page load
+        document.addEventListener('DOMContentLoaded', fetchWorkers);
+    </script>
+</body>
+</html>
