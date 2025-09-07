@@ -1,28 +1,30 @@
+require('dotenv').config(); // Add at the top
+
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 
 const app = express();
-const port = 3009;
+const port = process.env.PORT || 3009;
 
 // PostgreSQL connection pool setup
 const pool = new Pool({
-    user: 'postgres',
-    host: 'localhost',
-    database: 'agriwork',
-    password: 'adhi2410',
-    port: 5432,
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT,
 });
 
 app.use(cors());
 app.use(bodyParser.json());
+
 // POST route for login
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        // Query database for the user
         const result = await pool.query(
             'SELECT * FROM users WHERE username = $1 AND password = $2',
             [username, password]
@@ -39,22 +41,54 @@ app.post('/login', async (req, res) => {
     }
 });
 
-// POST route to create a new worker
+// POST route to create a new worker (with automatic assignment)
 app.post('/workers', async (req, res) => {
     const { name, gender, phoneno, address, skillset, dob, datehired } = req.body;
 
     try {
+        // Check for duplicate phone number
         const checkPhone = await pool.query('SELECT * FROM workers WHERE phoneno = $1', [phoneno]);
         if (checkPhone.rows.length > 0) {
             return res.status(400).json({ error: 'Phone number already exists.' });
         }
 
+        // Insert the new worker
         const result = await pool.query(
             `INSERT INTO workers (name, gender, phoneno, address, skillset, dob, datehired)
              VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
             [name, gender, phoneno, address, skillset, dob, datehired]
         );
-        res.status(201).json(result.rows[0]);
+
+        const newWorker = result.rows[0];
+
+        // Calculate experience from datehired
+        const experienceYearsResult = await pool.query(
+            `SELECT EXTRACT(YEAR FROM AGE(CURRENT_DATE, $1)) AS experience_years`,
+            [newWorker.datehired]
+        );
+        const experienceYears = experienceYearsResult.rows[0].experience_years;
+
+        // Automatically assign jobs if experience > 5 years
+        if (experienceYears > 5) {
+            const jobPositions = await pool.query('SELECT id, required_skills FROM job_positions');
+            const workerSkills = newWorker.skillset.split(',');
+
+            for (const job of jobPositions.rows) {
+                const jobSkills = job.required_skills.split(',');
+                const matchingSkills = workerSkills.filter(skill => jobSkills.includes(skill));
+
+                if (matchingSkills.length > 0) {
+                    await pool.query(
+                        `INSERT INTO workers_job_positions (worker_id, job_position_id)
+                         VALUES ($1, $2)
+                         ON CONFLICT DO NOTHING`,
+                        [newWorker.id, job.id]
+                    );
+                }
+            }
+        }
+
+        res.status(201).json(newWorker);
     } catch (error) {
         console.error('Error:', error.message);
         res.status(500).json({ error: 'Failed to create worker', message: error.message });
@@ -95,9 +129,7 @@ app.delete('/workers/:phoneno', async (req, res) => {
 // GET route to fetch all training sessions
 app.get('/training-sessions', async (req, res) => {
     try {
-        const result = await pool.query(
-            'SELECT id, title FROM training_sessions'
-        );
+        const result = await pool.query('SELECT id, title FROM training_sessions');
         res.json(result.rows);
     } catch (error) {
         console.error('Error fetching training sessions:', error.message);
@@ -150,88 +182,21 @@ app.get('/workers/:id/training-sessions', async (req, res) => {
     }
 });
 
-app.post('/assign-experienced-workers', async (req, res) => {
-    try {
-        // Step 1: Query workers with more than 5 years of experience
-        const experiencedWorkers = await pool.query(`
-            SELECT id, skillset 
-            FROM workers 
-            WHERE experience_years > 5
-        `);
-
-        // Step 2: Query all job positions with required skills
-        const jobPositions = await pool.query(`
-            SELECT id, required_skills
-            FROM job_positions
-        `);
-
-        // Step 3: Iterate through each experienced worker
-        for (const worker of experiencedWorkers.rows) {
-            const workerId = worker.id;  // Using 'id' for worker
-            const workerSkills = worker.skillset.split(',');  // Convert worker skillset to an array
-
-            // Step 4: Iterate through each job position
-            for (const job of jobPositions.rows) {
-                const jobSkills = job.required_skills.split(',');  // Convert job required skills to an array
-
-                // Step 5: Check if there is an intersection between worker skills and job required skills
-                const matchingSkills = workerSkills.filter(skill => jobSkills.includes(skill));
-
-                // Step 6: If there is a match, insert the worker-job position assignment
-                if (matchingSkills.length > 0) {
-                    console.log(`Worker ${workerId} has matching skills for Job Position ${job.id}`);
-
-                    // Step 7: Check if the worker is already assigned to this job position
-                    const checkAssignment = await pool.query(`
-                        SELECT * FROM workers_job_positions 
-                        WHERE worker_id = $1 AND job_position_id = $2
-                    `, [workerId, job.id]);
-
-                    // If not already assigned, insert into workers_job_positions
-                    if (checkAssignment.rows.length === 0) {
-                        console.log(`Assigning Worker ${workerId} to Job Position ${job.id}`);
-
-                        await pool.query(`
-                            INSERT INTO workers_job_positions (worker_id, job_position_id)
-                            VALUES ($1, $2)
-                            ON CONFLICT DO NOTHING
-                        `, [workerId, job.id]);
-
-                        console.log(`Assigned Worker ${workerId} to Job Position ${job.id}`);
-                    } else {
-                        console.log(`Worker ${workerId} is already assigned to Job Position ${job.id}`);
-                    }
-                }
-            }
-        }
-
-        // Step 8: Send success response
-        res.status(200).json({ message: 'Experienced workers successfully assigned to job positions' });
-    } catch (error) {
-        // Step 9: Handle errors
-        console.error('Error:', error.message);
-        res.status(500).json({ error: 'Failed to assign experienced workers to job positions', message: error.message });
-    }
-});
-
+// GET route to fetch all workers and their assigned job positions
 app.get('/workers-job-positions', async (req, res) => {
     try {
-      // Query the workers and their assigned job positions
-      const result = await pool.query(`
-        SELECT w.id AS worker_id, w.name AS worker_name, jp.title AS job_position_title
-        FROM workers w
-        JOIN workers_job_positions wjp ON w.id = wjp.worker_id
-        JOIN job_positions jp ON wjp.job_position_id = jp.id
-      `);
-  
-      // Send the result as a response
-      res.json(result.rows);
+        const result = await pool.query(`
+            SELECT w.id AS worker_id, w.name AS worker_name, jp.title AS job_position_title
+            FROM workers w
+            JOIN workers_job_positions wjp ON w.id = wjp.worker_id
+            JOIN job_positions jp ON wjp.job_position_id = jp.id
+        `);
+        res.json(result.rows);
     } catch (error) {
-      console.error('Error fetching workers and job positions:', error.message);
-      res.status(500).json({ error: 'Failed to fetch workers and job positions' });
+        console.error('Error fetching workers and job positions:', error.message);
+        res.status(500).json({ error: 'Failed to fetch workers and job positions' });
     }
-  });
-  
+});
 
 // Test route
 app.get("/", (req, res) => {
