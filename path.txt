@@ -1,12 +1,27 @@
-agri-worker/
+.vscode/
 │
 ├── backend/
-│   ├── server.js               # Backend Node.js server code
-│   ├── db.js                   # Database connection configuration
-│   └── package.json            # Backend dependencies (express, pg, etc.)
+│   ├── node_modules/                 # Backend dependencies
+│   ├── db.js                         # Database connection/configuration
+│   ├── package-lock.json             # Package lock file for backend dependencies
+│   ├── package.json                  # Backend dependencies (express, pg, etc.)
+│   └── server.js                     # Backend Node.js server code
 │
-└── frontend/
-    ├── index.html              # Frontend HTML file
-    ├── main.js                 # Frontend JavaScript to make API calls
-    ├── style.css               # Optional: For styling the page
-    └── package.json            # Frontend dependencies (if using npm)
+├── frontend/
+│   ├── .idea/                        # IDE configuration files
+│   ├── assigned.html                 # Page for assigned workers
+│   ├── assignworkertotraining.html   # Page to assign worker to training
+│   ├── home.html                     # Homepage
+│   ├── index.html                    # Entry HTML page
+│   ├── login.html                    # Login form
+│   ├── main.js                       # Main frontend JavaScript
+│   ├── package.json                  # Frontend dependencies (if using npm)
+│   ├── script.js                     # Additional frontend Javascript
+│   ├── style.css                     # Stylesheet for the frontend
+│   ├── updateform.html               # Form to update worker/training
+│   └── workerlist.html               # Worker list display page
+│
+├── .env                              # Environment variable definitions
+├── .gitignore                        # Git ignored files list
+├── path.txt                          # Text documentation for paths or usage
+└── README.md                         # Project documentation
